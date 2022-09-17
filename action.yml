@@ -66,7 +66,7 @@ runs:
             fi
 
             if [[ "${mode}" == "cloud" ]]; then
-              echo "Autoscan..."
+              echo "Checking for autoscan eligibility."
               curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
                   "${API_URL}/autoscan/eligibility?autoEnable=true&projectKey=${project}"
             fi
