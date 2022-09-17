@@ -39,7 +39,7 @@ runs:
                       | jq ".paging.total"`
           if [[ "$count" == "0" ]]; then
             echo "Adding project '$project' to sonarcloud."
-            curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
+            curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
                 -X POST "${API_URL}/projects/create" \
                 -d "project=${project}&organization=${owner}&name=${repo}"
           elif [[ "$count" == "22" ]]; then
@@ -51,7 +51,7 @@ runs:
         if [[ ${{ inputs.analysis-mode }} == "ci" ]]; then
           echo "Setting analysis-mode to ci driven."
 
-          curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
+          curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
                -X POST "${API_URL}/autoscan/activation" \
                -d "enable=false&projectKey=${project}"
         elif [[ ${{ inputs.analysis-mode }} == "cloud" ]]; then
