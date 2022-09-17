@@ -42,7 +42,24 @@ runs:
             curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
                 -X POST "${API_URL}/projects/create" \
                 -d "project=${project}&organization=${owner}&name=${repo}"
-            sleep 10 # give sonarcloud a bit of time to do it's thing.
+
+            found=0
+            i=0
+            while [[ "$found" == "0" ]]
+            do
+              echo "Waiting for the project to be created..."
+              sleep 5 # give sonarcloud a bit of time to do it's thing.
+              found=`curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
+                          "${API_URL}/projects/search" \
+                          -d "organization=$owner&projects=${project}" \
+                          | jq ".paging.total"`
+              i=$((i+1))
+
+              if [[ "$i" == 12 ]]; then
+                echo "Error timed out waiting on the project to be created."
+                exit 1
+              fi
+            done
           elif [[ "$count" == "22" ]]; then
             echo "Error asking about the project."
             exit 1
@@ -52,13 +69,13 @@ runs:
         if [[ ${{ inputs.analysis-mode }} == "ci" ]]; then
           echo "Setting analysis-mode to ci driven."
 
-          curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
+          curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
                -X POST "${API_URL}/autoscan/activation" \
                -d "enable=false&projectKey=${project}"
         elif [[ ${{ inputs.analysis-mode }} == "cloud" ]]; then
           echo "Setting analysis-mode to cloud driven."
 
-          curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
+          curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
                -X POST "${API_URL}/autoscan/activation" \
                -d "enable=true&projectKey=${project}"
         fi
