@@ -61,11 +61,14 @@ runs:
                 -X POST "${API_URL}/alm_integration/provision_projects" \
                 -d "installationKeys=${owner}/${repo}|${repoid}&organization=${sowner}"
 
-            echo "Autoscan..."
-            curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
-                "${API_URL}/autoscan/eligibility?autoEnable=true&projectKey=${project}"
             if [[ "${mode}" -ne "ci" && "${mode}" -ne "cloud" ]]; then
               mode="cloud"
+            fi
+
+            if [[ "${mode}" == "cloud" ]]; then
+              echo "Autoscan..."
+              curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
+                  "${API_URL}/autoscan/eligibility?autoEnable=true&projectKey=${project}"
             fi
           fi
         fi
@@ -84,4 +87,3 @@ runs:
                -d "enable=true&projectKey=${project}"
         fi
         echo "Configuration complete."
-        exit -1
