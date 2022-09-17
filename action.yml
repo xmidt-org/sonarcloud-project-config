@@ -43,19 +43,26 @@ runs:
                 -X POST "${API_URL}/projects/create" \
                 -d "project=${project}&organization=${owner}&name=${repo}"
 
+            echo ""
+
             found=0
             i=0
             while [[ "$found" == "0" ]]
             do
               echo "Waiting for the project to be created..."
+
               sleep 5 # give sonarcloud a bit of time to do it's thing.
               found=`curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
                           "${API_URL}/projects/search" \
                           -d "organization=$owner&projects=${project}" \
                           | jq ".paging.total"`
+              if [[ "$found" == "22" ]]; then
+                found=0
+              fi
+
               i=$((i+1))
 
-              if [[ "$i" == 12 ]]; then
+              if [[ "$i" == "12" ]]; then
                 echo "Error timed out waiting on the project to be created."
                 exit 1
               fi
