@@ -58,7 +58,7 @@ runs:
 
             # The way the site makes it work.  It may change.
             curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
-                -X POST "${API_URL}/alm_integration/provision_projects"
+                -X POST "${API_URL}/alm_integration/provision_projects" \
                 -d "installationKeys=${owner}/${repo}|${repoid}&organization=${sowner}"
 
             echo "Autoscan..."
