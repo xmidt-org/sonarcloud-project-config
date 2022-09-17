@@ -12,6 +12,11 @@ inputs:
     required: false
     default: true
 
+  sonarcloud-org:
+    description: 'The Sonarcloud organization name if you have set it to something other than the github org name.'
+    required: false
+    default: ''
+
   analysis-mode:
     description: 'Set the analysis mode to one of: cloud, ci or unchanged (default)'
     required: false
@@ -28,48 +33,38 @@ runs:
       run: |
         API_URL='https://sonarcloud.io/api'
         owner='${{ github.repository_owner }}'
+        sowner='${{ inputs.sonarcloud-org }}'
         repo='${{ github.event.repository.name }}'
+        repoid='${{ github.event.repository.id }}'
         project="${owner}_${repo}"
         SONAR_TOKEN='${{ inputs.sonar-token }}'
+        mode='${{ inputs.analysis-mode }}'
+
+        if [[ "" == "$sowner" ]]; then
+          sowner='${{ github.repository_owner }}'
+        fi
 
         if [[ ${{ inputs.create-missing-project }} == "true" ]]; then
           count=`curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
                       "${API_URL}/projects/search" \
-                      -d "organization=$owner&projects=${project}" \
+                      -d "organization=$sowner&projects=${project}" \
                       | jq ".paging.total"`
           if [[ "$count" == "0" ]]; then
             echo "Adding project '$project' to sonarcloud."
+            # The way it "should work" based on their documentation.
+            #curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
+            #    -X POST "${API_URL}/projects/create" \
+            #    -d "project=${project}&organization=${sowner}&name=${repo}"
+
+            # The way the site makes it work.  It may change.
             curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
-                -X POST "${API_URL}/projects/create" \
-                -d "project=${project}&organization=${owner}&name=${repo}"
-
-            echo ""
-
-            found=0
-            i=0
-            while [[ "$found" == "0" ]]
-            do
-              echo "Waiting for the project to be created..."
-
-              sleep 5 # give sonarcloud a bit of time to do it's thing.
-              found=`curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
-                          "${API_URL}/projects/search" \
-                          -d "organization=$owner&projects=${project}" \
-                          | jq ".paging.total"`
-              if [[ "$found" == "22" ]]; then
-                found=0
-              fi
-
-              i=$((i+1))
-
-              if [[ "$i" == "12" ]]; then
-                echo "Error timed out waiting on the project to be created."
-                exit 1
-              fi
-            done
-          elif [[ "$count" == "22" ]]; then
-            echo "Error asking about the project."
-            exit 1
+                -X POST "${API_URL}/alm_integration/provision_projects"
+                -d "installationKeys=${owner}/${repo}|${repoid}&organization=${sowner}"
+            curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
+                "${API_URL}/autoscan/eligibility?autoEnable=true&projectKey=${project}"
+            if [[ "${mode}" -ne "ci" && "${mode}" -ne "cloud" ]]; then
+              mode="cloud"
+            fi
           fi
         fi
 
