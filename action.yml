@@ -33,18 +33,18 @@ runs:
         SONAR_TOKEN='${{ inputs.sonar-token }}'
 
         if [[ ${{ inputs.create-missing-project }} == "true" ]]; then
-          count=`curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
+          count=`curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
                       "${API_URL}/projects/search" \
-                      -F organization=$owner \
-                      -F projects=$project | jq ".paging.total"`
+                      -F "organization=$owner" \
+                      -F "projects=$project" | jq ".paging.total"`
           if [[ "$count" == "0" ]]; then
             echo "Adding project '$project' to sonarcloud."
-            curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
+            curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
                 -H "Content-Type: application/x-www-form-urlencoded" \
                 -X POST "${API_URL}/projects/create" \
-                -F project=$project \
-                -F organization=$owner \
-                -F name=$repo
+                -F "project=$project" \
+                -F "organization=$owner" \
+                -F "name=$repo"
           else
             echo "Project exists in sonarcloud."
           fi
@@ -53,15 +53,15 @@ runs:
         if [[ ${{ inputs.analysis-mode }} == "ci" ]]; then
           echo "Setting analysis-mode to ci driven."
 
-          curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
+          curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
                -X POST "${API_URL}/autoscan/activation" \
-               -F enable=false \
-               -F projectKey=$project
+               -F "enable=false" \
+               -F "projectKey=$project"
         elif [[ ${{ inputs.analysis-mode }} == "cloud" ]]; then
           echo "Setting analysis-mode to cloud driven."
 
-          curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
+          curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
                -X POST "${API_URL}/autoscan/activation" \
-               -F enable=true \
-               -F projectKey=$project
+               -F "enable=true" \
+               -F "projectKey=$project"
         fi
