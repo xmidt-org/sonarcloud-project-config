@@ -57,10 +57,12 @@ runs:
             #    -d "project=${project}&organization=${sowner}&name=${repo}"
 
             # The way the site makes it work.  It may change.
-            curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
+            curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
                 -X POST "${API_URL}/alm_integration/provision_projects"
                 -d "installationKeys=${owner}/${repo}|${repoid}&organization=${sowner}"
-            curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
+
+            echo "Autoscan..."
+            curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
                 "${API_URL}/autoscan/eligibility?autoEnable=true&projectKey=${project}"
             if [[ "${mode}" -ne "ci" && "${mode}" -ne "cloud" ]]; then
               mode="cloud"
@@ -82,3 +84,4 @@ runs:
                -d "enable=true&projectKey=${project}"
         fi
         echo "Configuration complete."
+        exit -1
