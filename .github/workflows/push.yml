@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: 2022 Comcast Cable Communications Management, LLC
+# SPDX-License-Identifier: Apache-2.0
+
+---
+name: Check action.yml
+
+on: [push, pull_request]  # yamllint disable-line rule:truthy
+
+jobs:
+  lint_all_yaml:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: yaml-lint
+        uses: ibiqlik/action-yamllint@v3
+        with:
+          config_data: |
+            extends: default
+            rules:
+              line-length:
+                max: 160
+                level: warning

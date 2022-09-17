@@ -1,0 +1,67 @@
+# SPDX-FileCopyrightText: 2022 Comcast Cable Communications Management, LLC
+# SPDX-License-Identifier: Apache-2.0
+
+name: 'Sonarcloud Project Configuration Action'
+description: 'Provide a simple way to automate sonarcloud projects.'
+branding:
+  icon: archive
+  color: 'green'
+inputs:
+  create-missing-project:
+    description: 'Create a project in Sonarcloud if one is missing, defaults to true'
+    required: false
+    default: true
+
+  analysis-mode:
+    description: 'Set the analysis mode to one of: cloud, ci or unchanged (default)'
+    required: false
+    default: unchanged
+
+  sonar-token:
+    description: 'The Sonarcloud token used for auth.'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - shell: bash
+      run: |
+        API_URL='https://sonarcloud.io/api'
+        owner='${{ github.repository_owner }}'
+        repo='${{ github.event.repository.name }}'
+        project="${owner}_${repo}"
+        SONAR_TOKEN='${{ inputs.sonar-token }}'
+
+        if [[ ${{ inputs.create-missing-project }} == "true" ]]; then
+          count=`curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
+                      "${API_URL}/projects/search" \
+                      -F organization=$owner \
+                      -F projects=$project | jq ".paging.total"`
+          if [[ "$count" == "0" ]]; then
+            echo "Adding project '$project' to sonarcloud."
+            curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
+                -H "Content-Type: application/x-www-form-urlencoded" \
+                -X POST "${API_URL}/projects/create" \
+                -F project=$project \
+                -F organization=$owner \
+                -F name=$repo
+          else
+            echo "Project exists in sonarcloud."
+          fi
+        fi
+
+        if [[ ${{ inputs.analysis-mode }} == "ci" ]]; then
+          echo "Setting analysis-mode to ci driven."
+
+          curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
+               -X POST "${API_URL}/autoscan/activation" \
+               -F enable=false \
+               -F projectKey=$project
+        elif [[ ${{ inputs.analysis-mode }} == "cloud" ]]; then
+          echo "Setting analysis-mode to cloud driven."
+
+          curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
+               -X POST "${API_URL}/autoscan/activation" \
+               -F enable=true \
+               -F projectKey=$project
+        fi
