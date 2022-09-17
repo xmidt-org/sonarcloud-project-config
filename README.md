@@ -8,6 +8,7 @@ CI driven analysis.
 ### Inputs
 
 - `create-missing-project`: If `true` creates a sonarcloud project if not present. [**optional, default:** `true`]
+- `sonarcloud-org`: If set, is the sonarcloud org to use instead of the github org/owner.  [**optional, default:** ``]
 - `analysis-mode`: If `ci` the analysis mode is set to CI driven.  If `cloud` the
    analysis mode is set to Cloud driven.  Otherwise the value is not changed. [**optional, default:** `unchanged`]
 - `sonar-token`: The SONAR_TOKEN used to access/upload to sonarcloud. [**required**]
