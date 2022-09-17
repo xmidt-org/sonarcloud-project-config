@@ -35,15 +35,15 @@ runs:
         if [[ ${{ inputs.create-missing-project }} == "true" ]]; then
           count=`curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
                       "${API_URL}/projects/search" \
-                      -d "organization=$owner&projects=$project" \
+                      -d "organization=$owner&projects=${project}" \
                       | jq ".paging.total"`
           if [[ "$count" == "0" ]]; then
             echo "Adding project '$project' to sonarcloud."
             curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
                 -X POST "${API_URL}/projects/create" \
-                -d "project=$project&organization=$owner&name=$repo"
+                -d "project=${project}&organization=${owner}&name=${repo}"
           else
-            echo "Project exists in sonarcloud."
+            echo "Project '$project' exists in sonarcloud."
           fi
         fi
 
@@ -52,11 +52,12 @@ runs:
 
           curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
                -X POST "${API_URL}/autoscan/activation" \
-               -d "enable=false&projectKey=$project"
+               -d "enable=false&projectKey=${project}"
         elif [[ ${{ inputs.analysis-mode }} == "cloud" ]]; then
           echo "Setting analysis-mode to cloud driven."
 
           curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
                -X POST "${API_URL}/autoscan/activation" \
-               -d "enable=true&projectKey=$project"
+               -d "enable=true&projectKey=${project}"
         fi
+        echo "Configuration complete."
