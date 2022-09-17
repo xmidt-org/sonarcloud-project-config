@@ -42,6 +42,7 @@ runs:
             curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
                 -X POST "${API_URL}/projects/create" \
                 -d "project=${project}&organization=${owner}&name=${repo}"
+            sleep 10 # give sonarcloud a bit of time to do it's thing.
           elif [[ "$count" == "22" ]]; then
             echo "Error asking about the project."
             exit 1
