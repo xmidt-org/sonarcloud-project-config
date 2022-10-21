@@ -103,6 +103,8 @@ runs:
                -d "enable=true&projectKey=${project}"
         fi
 
+        echo "Validating the new code detection."
+
         type=`curl -s -G -f -H "Authorization: Bearer $SONAR_TOKEN" \
                       "${API_URL}/settings/values" \
                       -d "component=${project}" \
@@ -113,6 +115,9 @@ runs:
                       -d "component=${project}" \
                       -d "keys=sonar.leak.period" \
                       | jq -r ".settings[].value"`
+
+        echo " type=$type"
+        echo "value=$value"
 
         if [[ ${{ inputs.new-code-delta }} -ne "" ]]; then
           echo "Validating new code definition matches."
@@ -165,3 +170,4 @@ runs:
         fi
 
         echo "Configuration complete."
+        exit 1
