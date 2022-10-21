@@ -22,6 +22,22 @@ inputs:
     required: false
     default: unchanged
 
+  new-code-delta:
+    description: 'Set the way new code is identified to one of: "", commit, date, days, tag'
+    required: false
+
+  new-code-tag:
+    description: 'If new-code-delta is set to "tag" this field specifies the tag to diff against.'
+    required: false
+
+  new-code-date:
+    description: 'If new-code-delta is set to "date" this field specifies the date to measure from.'
+    required: false
+
+  new-code-days:
+    description: 'If new-code-delta is set to "days" this field specifies the number of days.'
+    required: false
+
   sonar-token:
     description: 'The Sonarcloud token used for auth.'
     required: true
@@ -61,7 +77,7 @@ runs:
                 -X POST "${API_URL}/alm_integration/provision_projects" \
                 -d "installationKeys=${owner}/${repo}|${repoid}&organization=${sowner}"
 
-            if [[ "${mode}" -ne "ci" && "${mode}" -ne "cloud" ]]; then
+            if [[ "${mode}" != "ci" && "${mode}" != "cloud" ]]; then
               mode="cloud"
             fi
 
@@ -86,4 +102,66 @@ runs:
                -X POST "${API_URL}/autoscan/activation" \
                -d "enable=true&projectKey=${project}"
         fi
+
+        type=`curl -s -G -f -H "Authorization: Bearer $SONAR_TOKEN" \
+                      "${API_URL}/settings/values" \
+                      -d "component=${project}" \
+                      -d "keys=sonar.leak.period.type" \
+                      | jq -r ".settings[].value"`
+        value=`curl -s -G -f -H "Authorization: Bearer $SONAR_TOKEN" \
+                      "${API_URL}/settings/values" \
+                      -d "component=${project}" \
+                      -d "keys=sonar.leak.period" \
+                      | jq -r ".settings[].value"`
+
+        if [[ "${{ inputs.new-code-delta }}" != "" ]]; then
+          echo "Validating new code definition matches."
+
+          if [[ "${{ inputs.new-code-delta }}" == "commit" ]]; then
+            if [[ "previous_version" != "$type" && "previous_version" != "$value" ]]; then
+              echo "Setting new code definition to previous version."
+
+              curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
+                   -X POST "${API_URL}/settings/set" \
+                        -d "component=${project}&key=sonar.leak.period&value=previous_version"
+              curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
+                   -X POST "${API_URL}/settings/set" \
+                        -d "component=${project}&key=sonar.leak.period.type&value=previous_version"
+            fi
+          elif [[ "${{ inputs.new-code-delta }}" == "date" ]]; then
+            if [[ "date" != "$type" && "${{ inputs.new-code-date }}" != "$value" ]]; then
+              echo "Setting new code definition to delta a specific date (${{ inputs.new-code-date }})."
+
+              curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
+                   -X POST "${API_URL}/settings/set" \
+                        -d "component=${project}&key=sonar.leak.period&value=${{ inputs.new-code-date }}"
+              curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
+                   -X POST "${API_URL}/settings/set" \
+                        -d "component=${project}&key=sonar.leak.period.type&value=date"
+            fi
+          elif [[ "${{ inputs.new-code-delta }}" == "days" ]]; then
+            if [[ "days" != "$type" && "${{ inputs.new-code-days }}" != "$value" ]]; then
+              echo "Setting new code definition to a rolling ${{ inputs.new-code-days }} days."
+
+              curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
+                   -X POST "${API_URL}/settings/set" \
+                        -d "component=${project}&key=sonar.leak.period&value=${{ inputs.new-code-days }}"
+              curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
+                   -X POST "${API_URL}/settings/set" \
+                        -d "component=${project}&key=sonar.leak.period.type&value=date"
+            fi
+          elif [[ "${{ inputs.new-code-delta }}" == "tag" ]]; then
+            if [[ "version" != "$type" && "${{ inputs.new-code-tag }}" != "$value" ]]; then
+              echo "Setting new code definition to code delta this tag '${{ inputs.new-code-tag }}'."
+
+              curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
+                   -X POST "${API_URL}/settings/set" \
+                        -d "component=${project}&key=sonar.leak.period&value=${{ inputs.new-code-tag }}"
+              curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
+                   -X POST "${API_URL}/settings/set" \
+                        -d "component=${project}&key=sonar.leak.period.type&value=version"
+            fi
+          fi
+        fi
+
         echo "Configuration complete."
