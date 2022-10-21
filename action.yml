@@ -123,7 +123,7 @@ runs:
           echo "Validating new code definition matches."
 
           if [[ "${{ inputs.new-code-delta }}" == "commit" ]]; then
-            if [[ "previous_value" != "$type" && "previous_value" != "$value" ]]; then
+            if [[ "previous_version" != "$type" && "previous_version" != "$value" ]]; then
               echo "Setting new code definition to previous version."
 
               curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
