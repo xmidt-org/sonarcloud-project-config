@@ -119,11 +119,11 @@ runs:
         echo " type=$type"
         echo "value=$value"
 
-        if [[ ${{ inputs.new-code-delta }} -ne "" ]]; then
+        if [[ "${{ inputs.new-code-delta }}" -ne "" ]]; then
           echo "Validating new code definition matches."
 
-          if [[ ${{ inputs.new-code-delta }} -eq "commit" ]]; then
-            if [[ "commit" -ne "$type" && "commit" -ne "$value" ]]; then
+          if [[ "${{ inputs.new-code-delta }}" -eq "commit" ]]; then
+            if [[ "previous_value" -ne "$type" && "previous_value" -ne "$value" ]]; then
               echo "Setting new code definition to previous version."
 
               curl -s -f -H "Authorization: Bearer $SONAR_TOKEN" \
@@ -133,7 +133,7 @@ runs:
                    -X POST "${API_URL}/settings/set" \
                         -d "component=${project}&key=sonar.leak.period.type&value=previous_value"
             fi
-          elif [[  ${{ inputs.new-code-delta }} -eq "date" ]]; then
+          elif [[ "${{ inputs.new-code-delta }}" -eq "date" ]]; then
             if [[ "date" -ne "$type" && "${{ inputs.new-code-date }}" -ne "$value" ]]; then
               echo "Setting new code definition to delta a specific date (${{ inputs.new-code-date }})."
 
@@ -144,7 +144,7 @@ runs:
                    -X POST "${API_URL}/settings/set" \
                         -d "component=${project}&key=sonar.leak.period.type&value=date"
             fi
-          elif [[  ${{ inputs.new-code-delta }} -eq "days" ]]; then
+          elif [[ "${{ inputs.new-code-delta }}" -eq "days" ]]; then
             if [[ "days" -ne "$type" && "${{ inputs.new-code-days }}" -ne "$value" ]]; then
               echo "Setting new code definition to a rolling ${{ inputs.new-code-days }} days."
 
@@ -155,7 +155,7 @@ runs:
                    -X POST "${API_URL}/settings/set" \
                         -d "component=${project}&key=sonar.leak.period.type&value=date"
             fi
-          elif [[  ${{ inputs.new-code-delta }} -eq "tag" ]]; then
+          elif [[ "${{ inputs.new-code-delta }}" -eq "tag" ]]; then
             if [[ "version" -ne "$type" && "${{ inputs.new-code-tag }}" -ne "$value" ]]; then
               echo "Setting new code definition to code delta this tag '${{ inputs.new-code-tag }}'."
 
